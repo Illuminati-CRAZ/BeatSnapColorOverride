@@ -1,2 +1,2 @@
 # BeatSnapColorOverride
-Potentially useful for variable-bpm maps, use with 1-ms separated timing points to hide timing lines.
+something something color theory or something idk
