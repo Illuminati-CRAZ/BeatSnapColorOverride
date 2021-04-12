@@ -1,4 +1,4 @@
---debug = "hi"
+debug = "hi"
 
 --why did i do this
 local function not_has(table, val)
@@ -11,7 +11,7 @@ local function not_has(table, val)
     return true
 end
 
-local function override(notes, n, bpm)
+local function override(notes, n, bpm, signature)
     local snaptimingpoints = {}
     local normaltimingpoints = {}
     local currenttimingpoints = {}
@@ -25,20 +25,23 @@ local function override(notes, n, bpm)
         end
     end
 
-    for _,starttime in pairs(starttimes) do
-        --finding timing points from previous override
-        local currenttp1 = map.GetTimingPointAt(starttime - SNAP_INTERVAL)
-        local currenttp2 = map.GetTimingPointAt(starttime + NORMAL_INTERVAL)
-
-        --timing points currently must be created with integer starttimes
-        table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, currenttp1.Signature, hide))
-        table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, currenttp1.Signature, hide))
-
-        if currenttp1.StartTime == starttime - SNAP_INTERVAL then
-            table.insert(currenttimingpoints, currenttp1)
+    for _, starttime in pairs(starttimes) do
+        --remove timing points within time interval of new timing points
+        for _, tp in pairs(map.TimingPoints) do
+            if starttime - SNAP_INTERVAL <= tp.StartTime and tp.StartTime <= starttime + NORMAL_INTERVAL then
+                table.insert(currenttimingpoints, tp)
+            end
+            
+            if tp.StartTime > starttime + NORMAL_INTERVAL then break end
         end
-        if currenttp2.StartTime == starttime + NORMAL_INTERVAL then
-            table.insert(currenttimingpoints, currenttp2)
+
+        -- lua and/or moonsharp and/or me is being dumb
+        if signature == 3 then
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, time_signature.Triple, hide))
+            table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, time_signature.Triple, hide))
+        else
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, signature, hide))
+            table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, signature, hide))
         end
     end
 
@@ -58,6 +61,12 @@ local function override(notes, n, bpm)
     actions.PerformBatch(queue)
 end
 
+function signatureToInt(signature)
+    if signature == time_signature.Quadruple then return 4
+    elseif signature == time_signature.Triple then return 3
+    else return signature end
+end
+
 hide = true
 
 function draw()
@@ -69,50 +78,66 @@ function draw()
 
     local n = state.GetValue("n") or 1
     local bpm = state.GetValue("bpm") or map.GetCommonBpm()
+    local signature = state.GetValue("signature") or 4
+    local useCurrentBpm = state.GetValue("useCurrentBpm")
+    if useCurrentBpm == null then useCurrentBpm = true end
+    
+    if utils.IsKeyPressed(keys.LeftAlt) then hide = false end
+    if utils.IsKeyReleased(keys.LeftAlt) then hide = true end
 
     SNAP_INTERVAL = .125 --Timing point influencing beat snap color will be placed .125 ms behind note
     NORMAL_INTERVAL = .125 --Timing point returning timing to "normal" will be placed 2^-3 = .125 ms after note
     BIG_NUMBER = 60000 / SNAP_INTERVAL --60k beats per minutes = 1k beats per second = 1 beat per ms
 
     _, n = imgui.InputInt("1/n Snap", n)
-    _, bpm = imgui.InputInt("BPM", bpm)
+    _, bpm = imgui.InputFloat("BPM", bpm, 1)
+    _, signature = imgui.InputInt("Signature", signature, 1)
 
     _, hide = imgui.Checkbox("Hide Timing Lines?", hide)
+    _, useCurrentBpm = imgui.Checkbox("Use current BPM?", useCurrentBpm)
+    
+    if useCurrentBpm and notes[1] then
+        local tp = map.GetTimingPointAt(notes[1].StartTime + 1)
+        bpm = tp.Bpm
+        signature = signatureToInt(tp.Signature)
+    end
 
     if imgui.Button("click me") then
-        override(notes, n, bpm)
+        override(notes, n, bpm, signature)
     end
 
     --I hate this
     if utils.IsKeyPressed(81) then --qwert
-        override(notes, 1, bpm)
+        override(notes, 1, bpm, signature)
     elseif utils.IsKeyPressed(87) then
-        override(notes, 2, bpm)
+        override(notes, 2, bpm, signature)
     elseif utils.IsKeyPressed(69) then --nice
-        override(notes, 4, bpm)
+        override(notes, 4, bpm, signature)
     elseif utils.IsKeyPressed(82) then
-        override(notes, 8, bpm)
+        override(notes, 8, bpm, signature)
     elseif utils.IsKeyPressed(84) then
-        override(notes, 16, bpm)
+        override(notes, 16, bpm, signature)
     elseif utils.IsKeyPressed(65) then --asdfg
-        override(notes, 3, bpm)
+        override(notes, 3, bpm, signature)
     elseif utils.IsKeyPressed(83) then
-        override(notes, 6, bpm)
+        override(notes, 6, bpm, signature)
     elseif utils.IsKeyPressed(68) then
-        override(notes, 12, bpm)
+        override(notes, 12, bpm, signature)
     elseif utils.IsKeyPressed(70) then
-        override(notes, 24, bpm)
+        override(notes, 24, bpm, signature)
     elseif utils.IsKeyPressed(71) then
-        override(notes, 48, bpm)
+        override(notes, 48, bpm, signature)
     end
 
     imgui.Text("Press qwert to override with n = 1, 2, 4, 8, 16")
     imgui.Text("Press asdfg to override with n = 3, 6, 12, 24, 48")
 
-    --imgui.Text(debug)
+    imgui.Text(debug)
 
     state.SetValue("n", n)
     state.SetValue("bpm", bpm)
+    state.SetValue("signature", signature)
+    state.SetValue("useCurrentBpm", useCurrentBpm)
 
     imgui.End()
 end
