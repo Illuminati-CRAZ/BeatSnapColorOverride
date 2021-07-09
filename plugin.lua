@@ -34,9 +34,12 @@ local function override(notes, n, bpm, signature)
             
             if tp.StartTime > starttime + NORMAL_INTERVAL then break end
         end
-
-        -- lua and/or moonsharp and/or me is being dumb
-        if signature == 3 then
+        
+        if n == 1 and signature == 3 then
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime, bpm, time_signature.Triple, hide))
+        elseif n == 1 then
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime, bpm, signature, hide))
+        elseif signature == 3 then
             table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, time_signature.Triple, hide))
             table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, time_signature.Triple, hide))
         else
@@ -107,26 +110,28 @@ function draw()
     end
 
     --I hate this
-    if utils.IsKeyPressed(81) then --qwert
-        override(notes, 1, bpm, signature)
-    elseif utils.IsKeyPressed(87) then
-        override(notes, 2, bpm, signature)
-    elseif utils.IsKeyPressed(69) then --nice
-        override(notes, 4, bpm, signature)
-    elseif utils.IsKeyPressed(82) then
-        override(notes, 8, bpm, signature)
-    elseif utils.IsKeyPressed(84) then
-        override(notes, 16, bpm, signature)
-    elseif utils.IsKeyPressed(65) then --asdfg
-        override(notes, 3, bpm, signature)
-    elseif utils.IsKeyPressed(83) then
-        override(notes, 6, bpm, signature)
-    elseif utils.IsKeyPressed(68) then
-        override(notes, 12, bpm, signature)
-    elseif utils.IsKeyPressed(70) then
-        override(notes, 24, bpm, signature)
-    elseif utils.IsKeyPressed(71) then
-        override(notes, 48, bpm, signature)
+    if not (utils.IsKeyDown(keys.LeftControl) or utils.IsKeyDown(keys.RightControl)) then
+        if utils.IsKeyPressed(81) then --qwert
+            override(notes, 1, bpm, signature)
+        elseif utils.IsKeyPressed(87) then
+            override(notes, 2, bpm, signature)
+        elseif utils.IsKeyPressed(69) then --nice
+            override(notes, 4, bpm, signature)
+        elseif utils.IsKeyPressed(82) then
+            override(notes, 8, bpm, signature)
+        elseif utils.IsKeyPressed(84) then
+            override(notes, 16, bpm, signature)
+        elseif utils.IsKeyPressed(65) then --asdfg
+            override(notes, 3, bpm, signature)
+        elseif utils.IsKeyPressed(83) then
+            override(notes, 6, bpm, signature)
+        elseif utils.IsKeyPressed(68) then
+            override(notes, 12, bpm, signature)
+        elseif utils.IsKeyPressed(70) then
+            override(notes, 24, bpm, signature)
+        elseif utils.IsKeyPressed(71) then
+            override(notes, 48, bpm, signature)
+        end
     end
 
     imgui.Text("Press qwert to override with n = 1, 2, 4, 8, 16")
