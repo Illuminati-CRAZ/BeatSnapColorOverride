@@ -38,13 +38,13 @@ local function override(notes, n, bpm, signature)
         if n == 1 and signature == 3 then
             table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime, bpm, time_signature.Triple, hide))
         elseif n == 1 then
-            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime, bpm, signature, hide))
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime, bpm, time_signature.Quadruple, hide))
         elseif signature == 3 then
             table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, time_signature.Triple, hide))
             table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, time_signature.Triple, hide))
         else
-            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, signature, hide))
-            table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, signature, hide))
+            table.insert(snaptimingpoints, utils.CreateTimingPoint(starttime - SNAP_INTERVAL, BIG_NUMBER / n, time_signature.Quadruple, hide))
+            table.insert(normaltimingpoints, utils.CreateTimingPoint(starttime + NORMAL_INTERVAL, bpm, time_signature.Quadruple, hide))
         end
     end
 
@@ -67,7 +67,7 @@ end
 function signatureToInt(signature)
     if signature == time_signature.Quadruple then return 4
     elseif signature == time_signature.Triple then return 3
-    else return signature end
+    else return 4 end
 end
 
 hide = true
@@ -85,8 +85,8 @@ function draw()
     local useCurrentBpm = state.GetValue("useCurrentBpm")
     if useCurrentBpm == null then useCurrentBpm = true end
     
-    if utils.IsKeyPressed(keys.LeftAlt) then hide = false end
-    if utils.IsKeyReleased(keys.LeftAlt) then hide = true end
+    if utils.IsKeyDown(keys.LeftAlt) then hide = false end
+    if utils.IsKeyUp(keys.LeftAlt) then hide = true end
 
     SNAP_INTERVAL = .125 --Timing point influencing beat snap color will be placed .125 ms behind note
     NORMAL_INTERVAL = .125 --Timing point returning timing to "normal" will be placed 2^-3 = .125 ms after note
@@ -95,6 +95,8 @@ function draw()
     _, n = imgui.InputInt("1/n Snap", n)
     _, bpm = imgui.InputFloat("BPM", bpm, 1)
     _, signature = imgui.InputInt("Signature", signature, 1)
+    if signature < 3 then signature = 3 end
+    if signature > 4 then signature = 4 end
 
     _, hide = imgui.Checkbox("Hide Timing Lines?", hide)
     _, useCurrentBpm = imgui.Checkbox("Use current BPM?", useCurrentBpm)
@@ -110,7 +112,7 @@ function draw()
     end
 
     --I hate this
-    if not (utils.IsKeyDown(keys.LeftControl) or utils.IsKeyDown(keys.RightControl)) then
+    if not utils.IsKeyDown(keys.LeftControl) and not utils.IsKeyDown(keys.RightControl) then
         if utils.IsKeyPressed(81) then --qwert
             override(notes, 1, bpm, signature)
         elseif utils.IsKeyPressed(87) then
