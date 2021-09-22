@@ -1,4 +1,4 @@
-debug = "hi"
+--debug = "hi"
 
 --why did i do this
 local function not_has(table, val)
@@ -138,8 +138,9 @@ function draw()
 
     imgui.Text("Press qwert to override with n = 1, 2, 4, 8, 16")
     imgui.Text("Press asdfg to override with n = 3, 6, 12, 24, 48")
+    imgui.Text("Hold Alt to toggle Hide Timing Lines option")
 
-    imgui.Text(debug)
+    --imgui.Text(debug)
 
     state.SetValue("n", n)
     state.SetValue("bpm", bpm)
